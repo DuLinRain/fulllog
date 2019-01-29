@@ -52,24 +52,30 @@ class Fulllog {
 
 module.exports = function(options = {}) {
   const defaults = {
-    LEVEL: 10
+    LEVEL: 10,
+    onlyself: false
   };
 
   options = Object.assign({}, defaults, options);
-
+  let {onlyself = false} = options
   return async function (ctx, next) {
     ctx.fulllog = new Fulllog({
         ctx,
         ...options
     })
-    ctx.fulllog.log('req start')
-    let {version, platform, pid} = process
-    let {rss, heapTotal, heapUsed, external} = process.memoryUsage() 
-    ctx.fulllog.log('process info:', `[node版本: ${version}][平台: ${platform}][进程ID: ${pid}][运行时长: ${process.uptime()}][groupid: ${process.getgid()}][userid: ${process.getuid()}]`)
-    ctx.fulllog.log('process info:', `[rss: ${rss}][heapTotal: ${heapTotal}][heapUsed: ${heapUsed}][external: ${external}]`)
-    ctx.fulllog.log('req info:', JSON.stringify(ctx.request))
+    
+    if (!onlyself) {
+        ctx.fulllog.log('req start')
+        let {version, platform, pid} = process
+        let {rss, heapTotal, heapUsed, external} = process.memoryUsage() 
+        ctx.fulllog.log('process info:', `[node版本: ${version}][平台: ${platform}][进程ID: ${pid}][运行时长: ${process.uptime()}][groupid: ${process.getgid()}][userid: ${process.getuid()}]`)
+        ctx.fulllog.log('process info:', `[rss: ${rss}][heapTotal: ${heapTotal}][heapUsed: ${heapUsed}][external: ${external}]`)
+        ctx.fulllog.log('req info:', JSON.stringify(ctx.request))
+    }
     await next()
-    ctx.fulllog.log('res info:', JSON.stringify(ctx.response))
+    if (!onlyself) {
+        ctx.fulllog.log('res info:', JSON.stringify(ctx.response))
+    }
     ctx.fulllog.report()
   };
 };
